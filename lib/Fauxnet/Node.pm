@@ -75,7 +75,7 @@ sub tick {
 
     my @plist = keys(%{$self->{state}->{peers}});
     if (not (scalar(@plist))) {
-        if (int(rand(100)) == 42) {
+        if (int(rand(1000)) == 42) {
             print "$self->{id}: i would like to heartbeat, but i know no peers to send to\n";
 
             my $b = Fauxnet::Messages::IExist->new();

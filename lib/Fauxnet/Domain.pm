@@ -15,6 +15,10 @@ sub new {
     $self->{sent} = 0;
     $self->{broadcasted} = 0;
 
+    open FH,">fauxnet.out";
+    open TFH,">fauxnet-average.out";
+    close TFH;
+
     return(bless($self, $class));
 }
 
@@ -49,6 +53,22 @@ sub tick {
         $self->{nodes}->{ $to }->receive_message($m);
             $self->{sent} += 1;
     }
+
+    my @reportline;
+    my $total = 0;
+    foreach my $nodename (sort(keys(%{$self->{nodes}}))) {
+        my $count = scalar(keys(%{$self->{nodes}->{$nodename}->{state}->{peers}}));
+        push(@reportline, $count);
+        $total += $count;
+    }
+
+    my $av = $total / scalar(keys(%{$self->{nodes}}));
+
+    #print FH join(',',@reportline);
+    open TFH,">>fauxnet-average.out";
+    print TFH "$av,$self->{sent}\n";
+    close TFH;
+    #print FH "\n";
 }
 
 sub run {
@@ -57,7 +77,7 @@ sub run {
     while (1) {
         $self->tick();
         print "-------------------------\ndomain: tick " . $self->{clock}->time() . ": $self->{sent} sent ($self->{broadcasted} broadcasted) messages\n";
-        sleep(1);
+# sleep(1);
         $self->{clock}->beat();
     }
 }
