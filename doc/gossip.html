@@ -72,5 +72,6 @@ On computer networks, gossip protocols can be used to bring a cluster into consi
 Looking at the above plot, at any one time we can talk about the average knowledge of the entire network. Since we control each node in fauxnet, we are able to explore each node's state. By averaging the size of the "peer list" of each node at every tick, we develop the following plot (which also shows the total number of messages sent in the domain).
 </p>
 <p><img src="average_size.png">
-<p>Well! It's a cumulative <a href="http://en.wikipedia.org/wiki/Normal_distribution">normal distribution</a>! 
+<p>Well! It's a cumulative <a href="http://en.wikipedia.org/wiki/Normal_distribution">normal distribution</a>! That's pretty cool. Let's look at it another way- instead of figuring the "average known network size", let's look at the count of nodes that have "complete network knowledge"- in this instance, this is the number of nodes that know the size of the network is 250 nodes. Additionally, let's plot the number of nodes that gain complete knowledge as a function of time, as well as the count of messages sent through the router.
+<p><img src="complete.png">
 

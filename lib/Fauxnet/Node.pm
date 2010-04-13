@@ -103,7 +103,7 @@ sub heartbeat {
     # don't try to hard to avoid picking the same host twice. at this point, just don't
     # send more than one message to the same host, but don't re-pick
 
-    my $N = 2;
+    my $N = 1;
     my @directs;
     my $seens = {};
     foreach my $n (0 .. $N) {

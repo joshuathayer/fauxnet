@@ -6,12 +6,6 @@ use Fauxnet::Domain;
 
 my $domain = Fauxnet::Domain->new();
 $domain->{rounds} = 120;
-
-my $nodes;
-my $n = 250;
-while ($n > 0) {
-    $domain->addNode( Fauxnet::Node->new($n) );
-    $n--;
-}
-
+$domain->{nodecount} = 2500;
+$domain->init();
 $domain->run();

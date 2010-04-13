@@ -16,6 +16,7 @@ sub new {
     $self->{completed} = 0;
     $self->{broadcasted} = 0;
     $self->{rounds} = 0;
+    $self->{nodes} = {};
 
     open TFH,">fauxnet-average.out";
     close TFH;
@@ -27,6 +28,15 @@ sub addNode {
     my ($self, $node) = @_;
 
     $self->{nodes}->{ $node->{id} } = $node;
+}
+
+sub init {
+    my $self = shift;
+    my $n = $self->{nodecount};
+    while ($n) {
+        $self->addNode( Fauxnet::Node->new($n) );
+        $n--;
+    }
 }
 
 sub tick {
@@ -61,7 +71,7 @@ sub tick {
     foreach my $nodename (sort(keys(%{$self->{nodes}}))) {
         my $count = scalar(keys(%{$self->{nodes}->{$nodename}->{state}->{peers}}));
         push(@reportline, $count);
-        if ($count == 250) {
+        if ($count == $self->{nodes}) {
             $completed += 1;
         }
         $total += $count;
