@@ -5,6 +5,7 @@ use Fauxnet::Node;
 use Fauxnet::Domain;
 
 my $domain = Fauxnet::Domain->new();
+$domain->{rounds} = 120;
 
 my $nodes;
 my $n = 250;

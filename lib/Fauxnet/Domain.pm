@@ -13,7 +13,9 @@ sub new {
     my $self = {};
     $self->{clock} = Fauxnet::Clock->new();
     $self->{sent} = 0;
+    $self->{completed} = 0;
     $self->{broadcasted} = 0;
+    $self->{rounds} = 0;
 
     open TFH,">fauxnet-average.out";
     close TFH;
@@ -55,27 +57,35 @@ sub tick {
 
     my @reportline;
     my $total = 0;
+    my $completed = 0;
     foreach my $nodename (sort(keys(%{$self->{nodes}}))) {
         my $count = scalar(keys(%{$self->{nodes}->{$nodename}->{state}->{peers}}));
         push(@reportline, $count);
+        if ($count == 250) {
+            $completed += 1;
+        }
         $total += $count;
     }
+
+    my $newly_completed = $completed - $self->{completed};
+    $self->{completed} = $completed;
 
     my $av = $total / scalar(keys(%{$self->{nodes}}));
 
     open TFH,">>fauxnet-average.out";
-    print TFH "$av,$self->{sent}\n";
+    print TFH "$newly_completed,$self->{completed},$self->{sent}\n";
     close TFH;
 }
 
 sub run {
     my ($self) = @_;
 
-    while (1) {
+    while ($self->{rounds}) {
         $self->tick();
         print "-------------------------\ndomain: tick " . $self->{clock}->time() . ": $self->{sent} sent ($self->{broadcasted} broadcasted) messages\n";
 # sleep(1);
         $self->{clock}->beat();
+        $self->{rounds} -= 1;
     }
 }
 

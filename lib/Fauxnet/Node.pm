@@ -98,32 +98,41 @@ sub heartbeat {
         return({broadcast => [], direct => []});
     }
 
-    # XXX rule: per heartbeat call, you pick exactly one host to send directly to
-    # this is gossip!
-    my $host = $plist[ int(rand($#plist + 1)) ];
+    # XXX rule: per heartbeat call, you pick exactly N hosts to send directly to
+    # this is gossip! 
+    # don't try to hard to avoid picking the same host twice. at this point, just don't
+    # send more than one message to the same host, but don't re-pick
 
-    my $ret = Fauxnet::Messages::IdleGossip->new();
-    $ret->{time} = $self->{clock}->time();
-    $ret->{version} = $self->{version};
-    $self->{version} += 1;
-
-    $ret->{peers} = $self->{state}->{peers};
-    $ret->{to} = $host;
-    $ret->{id} = $self->{id};
-
-    # support returning messages to multiple peers
+    my $N = 2;
     my @directs;
-    push(@directs, $ret);
+    my $seens = {};
+    foreach my $n (0 .. $N) {
+        my $host = $plist[ int(rand($#plist + 1)) ];
+
+        next if $seens->{host};
+        $seens->{$host} = 1;
+        my $ret = Fauxnet::Messages::IdleGossip->new();
+        $ret->{time} = $self->{clock}->time();
+        $ret->{version} = $self->{version};
+        $self->{version} += 1;
+
+        $ret->{peers} = $self->{state}->{peers};
+        $ret->{to} = $host;
+        $ret->{id} = $self->{id};
+
+        # support returning messages to multiple peers
+        push(@directs, $ret);
+    }
 
     # XXX rule: if it has been N ticks since a host has checked-in anywhere, 
     # according to my state, then it's considered offline!
-    my $now = $self->{clock}->time();
-    foreach my $h (keys (%{$self->{state}->{peers}})) {
-        if (($now - 200) > $self->{state}->{peers}->{$h}->{seen}) {
-            print "***** $self->{id} sees a host $h as being down! *****\n";
-            delete $self->{state}->{peers}->{$h};
-        }
-    }
+#my $now = $self->{clock}->time();
+#   foreach my $h (keys (%{$self->{state}->{peers}})) {
+#       if (($now - 200) > $self->{state}->{peers}->{$h}->{seen}) {
+#           print "***** $self->{id} sees a host $h as being down! *****\n";
+#           delete $self->{state}->{peers}->{$h};
+#       }
+#   }
 
     print "$self->{id}: i know of " . scalar(keys(%{$self->{state}->{peers}})) . " peers at time " . $self->{clock}->time() . "\n";
     
