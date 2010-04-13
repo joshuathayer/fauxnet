@@ -15,7 +15,6 @@ sub new {
     $self->{sent} = 0;
     $self->{broadcasted} = 0;
 
-    open FH,">fauxnet.out";
     open TFH,">fauxnet-average.out";
     close TFH;
 
@@ -64,11 +63,9 @@ sub tick {
 
     my $av = $total / scalar(keys(%{$self->{nodes}}));
 
-    #print FH join(',',@reportline);
     open TFH,">>fauxnet-average.out";
     print TFH "$av,$self->{sent}\n";
     close TFH;
-    #print FH "\n";
 }
 
 sub run {

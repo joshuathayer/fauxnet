@@ -75,12 +75,12 @@ sub tick {
 
     my @plist = keys(%{$self->{state}->{peers}});
     if (not (scalar(@plist))) {
-        if (int(rand(1000)) == 42) {
+        if (int(rand(100)) == 42) {
             print "$self->{id}: i would like to heartbeat, but i know no peers to send to\n";
 
             my $b = Fauxnet::Messages::IExist->new();
             $b->{id} = $self->{id};
-           $b->{time} = $self->{clock}->time();
+            $b->{time} = $self->{clock}->time();
 
             push(@$bcast, $b);
         }
@@ -115,6 +115,16 @@ sub heartbeat {
     my @directs;
     push(@directs, $ret);
 
+    # XXX rule: if it has been N ticks since a host has checked-in anywhere, 
+    # according to my state, then it's considered offline!
+    my $now = $self->{clock}->time();
+    foreach my $h (keys (%{$self->{state}->{peers}})) {
+        if (($now - 200) > $self->{state}->{peers}->{$h}->{seen}) {
+            print "***** $self->{id} sees a host $h as being down! *****\n";
+            delete $self->{state}->{peers}->{$h};
+        }
+    }
+
     print "$self->{id}: i know of " . scalar(keys(%{$self->{state}->{peers}})) . " peers at time " . $self->{clock}->time() . "\n";
     
     return({broadcast => [], direct => \@directs});
@@ -130,9 +140,9 @@ sub handle_messages {
 
     return unless scalar(@{$self->{incoming_messages}});
 
-    print "$self->{id}: " . scalar(@{$self->{incoming_messages}}) . " messages enqueued\n";
+    # print "$self->{id}: " . scalar(@{$self->{incoming_messages}}) . " messages enqueued\n";
     foreach my $m (@{$self->{incoming_messages}}) {
-        print "\tfrom $m->{'id'}: $m->{'command'}\n";
+        # print "\tfrom $m->{'id'}: $m->{'command'}\n";
         my $ref = $self->can($m->{'command'});
         if ($ref) {
             $ref->($self, $m);
@@ -159,13 +169,14 @@ sub IExist {
         print "$self->{id}: received iexist from unknown peer $from\n";
         $self->{state}->{peers}->{$from} = {};
         $self->{state}->{peers}->{$from}->{version} = 0; # force merge
+        $self->{state}->{peers}->{$from}->{seen} = $self->{clock}->time(); 
     }
 }
 
 sub IdleGossip {
     my ($self, $m) = @_;
 
-    print "$self->{id}: received idlegossip from $m->{id}\n";
+    # print "$self->{id}: received idlegossip from $m->{id}\n";
 
     my $from = $m->{id};
     my $version = $m->{version};
@@ -175,12 +186,14 @@ sub IdleGossip {
         print "\t$self->{id}: received idlegossip from unknown peer $from!\n";
         $self->{state}->{peers}->{$from} = {};
         $self->{state}->{peers}->{$from}->{version} = 0; # force merge
+        $self->{state}->{peers}->{$from}->{seen} = $self->{clock}->time(); 
     }
 
     # we might have already received this state update
     if ($self->{state}->{peers}->{$from}->{version} <  $version) {
-        print "\t$self->{id}: received a new state from $from ($version)\n";
-        # merge logic
+        print "\t$self->{id}: received a new state via idlegossip from $from ($version)\n";
+
+        # merge logic!
         foreach my $host (keys(%{$m->{peers}})) {
             
             if(not(defined($self->{state}->{peers}->{$host}))) {
@@ -190,7 +203,11 @@ sub IdleGossip {
             } else {
                 # ok this is a host we know about... what do we do?
                 # meaning: do we increment the last-seen? does this count as being seen?
-                # XXX for now we say NO
+                # XXX we say yes: we know that *some* host saw it at some explicit time more
+                # recent than we saw it
+                if ($self->{state}->{peers}->{$host}->{seen} < $m->{peers}->{$host}->{seen}) {
+                    $self->{state}->{peers}->{$host}->{seen} = $m->{peers}->{$host}->{seen};
+                }
             }
         }
     } else {
