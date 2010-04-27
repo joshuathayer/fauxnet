@@ -14,6 +14,7 @@ sub new {
     $self->{'time'} = undef;
     $self->{'peers'} = undef;
     $self->{'version'} = undef;
+    $self->{'aux'} = undef;
 
     return bless $self, $class;
 }
