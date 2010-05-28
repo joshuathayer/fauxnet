@@ -14,14 +14,33 @@ $domain->{node_recovery_time} = 100;
 
 $domain->init();
 
+$domain->addPerTick('amIDone', sub {
+    my ($self, $name) = @_;
+
+    my $completed;
+    foreach my $node (values(%{$self->{nodes}})) {
+        if ($node->{aux}->{foo} eq 'bar') {
+            $completed += 1;
+        }
+    }
+
+    $self->note('extent',$completed);
+
+    if ($completed == 250) {
+        print "250. think i'm done.\n";
+        exit;
+    }
+
+});
+       
+
 $domain->addPerTick('report', sub {
     my ($self, $name) = @_;
-    print "in pertick callback $name\n";
 
+    my $total = 0; my $completed = 0;
     foreach my $nodename (sort(keys(%{$self->{nodes}}))) {
         my $count = scalar(keys(%{$self->{nodes}->{$nodename}->{state}->{peers}}));
-        push(@reportline, $count);
-        if ($count == $self->{nodes}) {
+        if ($count == scalar(keys(%{$self->{nodes}}))) {
             $completed += 1;
         }
         $total += $count;
@@ -39,6 +58,7 @@ $domain->addPerTick('report', sub {
 
 $domain->addNodeEvent('tick', 'iDontKnowAnyone', sub {
     my ($self, $domain) = @_;
+
     # XXX rule: if you tick and know no peers, throw a D-100 and if it comes up 42, 
     # send out a broadcast "i exist" message
 
@@ -56,8 +76,6 @@ $domain->addNodeEvent('tick', 'iDontKnowAnyone', sub {
     }
 
 });
-
-
 
 $domain->addEvent(100, sub {
     my $domain = shift;

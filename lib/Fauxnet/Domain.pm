@@ -129,6 +129,8 @@ sub addPerTick {
 sub note {
     my ($self, $key, $val) = @_;
 
+    $val = $val ? $val : 0;
+
     $self->{'notes'}->{$key} = $val;
 }
 
